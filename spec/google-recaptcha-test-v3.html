@@ -1,0 +1,137 @@
+<!DOCTYPE HTML>
+<html dir="ltr" lang="en">
+<head>
+    <title>ReCAPTCHA demo</title>
+    <link rel="stylesheet" href="https://www.gstatic.com/recaptcha/releases/zmiYzsHi8INTJBWt2QZC9aM5/demo__ltr.css"
+          type="text/css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.0.0/jquery.min.js"></script>
+    <script src='https://www.google.com/recaptcha/api.js?render=your-site-key-here'></script>
+</head>
+<script>
+
+    var ReCAPTCHAv3Utils = new function () {
+
+        var PUBLIC_KEY = 'your-site-key-here';
+
+        this.request = function (action, onSuccess, onError) {
+            console.log("inside success")
+            if (window.grecaptcha) {
+                console.log("inside")
+                window.grecaptcha.ready(function () {
+                    var config = {
+                        action: action
+                    };
+                    console.log(config)
+                    try {
+                        window.grecaptcha.execute(PUBLIC_KEY, config)
+                            .then(function (token) {
+                                console.log(token);
+                                onSuccess(token);
+                            });
+
+                    } catch (e) {
+                        var message = e && e.message || 'Captcha request error.';
+                        if (onError) {
+                            onError(message);
+                        }
+                    }
+                });
+            } else {
+                if (onError) {
+                    onError('reCAPTCHA v3 is not loaded correctly.');
+                }
+            }
+        };
+    };
+
+    function addUser(data) {
+
+        var onSuccess = function (token) {
+            console.log({token});
+
+            data['g-recaptcha-response'] = token; // <------- token received from Google reCAPTCHA v3
+            $.ajax({
+                type: 'POST',
+                url: 'http://localhost:8000/api/v2/users',
+                data: JSON.stringify(data),
+                contentType: 'application/json; charset=utf-8',
+                dataType: 'json',
+                success: function (data) {
+                    alert('Response: ' + data.message);
+                },
+                error: function (error) {
+                    console.log(error.responseJSON);
+                    alert('Request error!' + JSON.stringify(error.responseJSON));
+                }
+            });
+        };
+        var onError = function (message) {
+            alert('Error: ' + message);
+        };
+        ReCAPTCHAv3Utils.request('action', onSuccess, onError);
+    }
+
+    function onSubmitEvent(e) {
+        e.preventDefault();
+        var user = {
+            firstname: document.getElementById('input1').value,
+            lastname: document.getElementById('input2').value,
+            email: document.getElementById('input3').value,
+            color: document.querySelector('input[name="radios"]:checked').value
+        };
+        console.log(user);
+        addUser(user);
+    }
+
+</script>
+<body>
+<div class="sample-form">
+    <form id="recaptcha-demo-form" action="#" method="post">
+        <fieldset>
+            <legend>Sample Form with ReCAPTCHA</legend>
+            <ul>
+                <li>
+                    <label for="input1">First Name</label>
+                    <input class="jfk-textinput" id="input1" name="firstname"
+                           type="text" value="Jane" disabled aria-disabled="true">
+                </li>
+                <li>
+                    <label for="input2">Last Name</label>
+                    <input class="jfk-textinput" id="input2" name="lastname"
+                           type="text" value="Smith" disabled aria-disabled="true">
+                </li>
+                <li>
+                    <label for="input3">Email</label>
+                    <input class="jfk-textinput" id="input3" name="email" type="text"
+                           value="stopallbots@gmail.com" disabled aria-disabled="true">
+                </li>
+                <li>
+                    <p>Pick your favorite color:</p>
+                    <label class="jfk-radiobutton-label" for="option1">
+                        <input class="jfk-radiobutton-checked" type="radio" id="option1" name="radios" value="option1"
+                               disabled aria-disabled="true" checked aria-checked="true">
+                        Red
+                    </label>
+                    <label class="jfk-radiobutton-label" for="option2">
+                        <input class="jfk-radiobutton" type="radio" id="option2" name="radios" value="option2" disabled
+                               aria-disabled="true">
+                        Green
+                    </label>
+                </li>
+                <li>
+                    <div class=""><!-- BEGIN: ReCAPTCHA implementation example. -->
+                        <div id="recaptcha-demo" class="g-recaptcha">
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <button id="recaptcha-demo-submit" type="button" onclick="onSubmitEvent(event)" value="Submit">
+                        Subscribe
+                    </button>
+                </li>
+            </ul>
+        </fieldset>
+    </form>
+</div>
+</body>
+</html>
